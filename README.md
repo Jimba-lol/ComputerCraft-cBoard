@@ -1,2 +1,2 @@
-# ComputerCraft-cBoard
-Computer Craft Message Board
+# cBoard
+A Message Board, for the **ComputerCraft** mod for Minecraft
