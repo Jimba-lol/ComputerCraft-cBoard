@@ -3,6 +3,11 @@
 local username
 local passHash
 local id = os.getComputerID()
+
+local h = fs.open("/apps/cBoard/client/env.cfg","r")
+local env = textutils.unserialize(h.readAll())
+h.close()
+if env.myChan == nil then env.myChan = id end
 -- Functions
 -- return the locally store username
 function getUsername()
@@ -26,16 +31,16 @@ end
 -- Listen for a reply from the cBoard server
 local function listenToServer()
 	local event, side, msgChannel, replyChannel, msg, dist = os.pullEvent("modem_message")
-	if replyChannel == sChan then return msg end
-	return listenToServer()
+	if replyChannel == env.sChan then return msg end
+	return listenToServer(env)
 end
-local function sendAndListen()
-	modem.open(myChan)
+local function sendAndListen(myMsg)
+	env.modem.open(env.myChan)
 	parallel.waitForAll(
-		function() modem.transmit(sChan, myChan, myMsg) end,
-		function() reply = listenToServer() end
+		function() modem.transmit(env.sChan, env.myChan, myMsg) end,
+		function() reply = listenToServer(env) end
 	)
-	modem.close(myChan)
+	env.modem.close(env.myChan)
 	return reply
 end
 -- Enter credentials prompt
@@ -43,7 +48,7 @@ local function enterCreds()
 	print("Please enter your Username")
 	local u = read()
 	print("Please enter your Password")
-	local p = encrypt(read())
+	local p = encrypt(read("*"))
 	return u, p
 end
 -- Log in to server
@@ -104,7 +109,7 @@ local function checkUser()
 	}
 	local reply = sendAndListen(myMsg)
 	if reply then
-		login()
+		login(env)
 	elseif reply == nil then
 		print("Something went wrong, server did not respond in time.")
 	else

@@ -1,8 +1,11 @@
-local modem = peripheral.wrap("top")
-local sChannel = 9999
+local h = fs.open("/apps/cBoard/server/env.cfg","r")
+local env = textutils.unserialize(h.readAll())
+h.close()
+
+local modem = peripheral.wrap(env.modemSide)
 local logging = false
 -- open listen channel
-modem.open(channel)
+modem.open(env.sChan)
 -- list of message URIs accepted
 local URIs = {
 	-- user and login
@@ -18,8 +21,8 @@ end
 -- listen for the message
 local event, modemSide, senderChannel, replyChannel, message, dist = os.pullEvent("modem_message")
 if URIs[message.uri] == nil then return end
-if (message.uri == "checkUser")
-	if logging then log("Replying "..fs.exists("./data/users/").."to the following message:") end
+if (message.uri == "checkUser") then
+	if (logging) then log("Replying "..fs.exists("./data/users/").."to the following message:") end
 	-- return true if computer ID is in database
 	modem.transmit(message.id,senderChannel,fs.exists("./data/users/"..message.id))
 elseif (message.uri == "registerUser") then
@@ -43,4 +46,4 @@ if logging then
 	log("the sender's distance is "..(dist or "unknown"))
 end
 
-modem.close()
+modem.close(env.sChan)
