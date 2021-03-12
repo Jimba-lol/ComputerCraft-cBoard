@@ -8,5 +8,5 @@ os.loadAPI("/apps/cBoard/service/loginService.lua")
 local modem = peripheral.wrap(modemSide)
 if myChannel == nil then myChannel = id end
 -- Main
--- Check if we're registered then log in or register.
-loginService.checkUser()
+-- Check if we're registered, then log in or register.
+loginService.loginOrRegister()

@@ -9,27 +9,37 @@ function getUsername()
 	return username
 end
 -- return the locally stored password hash
-getPassHash()
+function getPassHash()
 	return passHash
 end
 -- Clear the screen
-function cls() 
+-- Would be better in a different API honestly. Will consider moving.
+local function cls() 
 	term.clear()
 	term.setCursorPos(1,1)
 end
 -- return encrypted version of string
-function encrypt(string)
+local function encrypt(string)
 	-- TODO
 	return string
 end
 -- Listen for a reply from the cBoard server
-function ListenToServer()
+local function listenToServer()
 	local event, side, msgChannel, replyChannel, msg, dist = os.pullEvent("modem_message")
 	if replyChannel == sChan then return msg end
-	return ListenToServer()
+	return listenToServer()
+end
+local function sendAndListen()
+	modem.open(myChan)
+	parallel.waitForAll(
+		function() modem.transmit(sChan, myChan, myMsg) end,
+		function() reply = listenToServer() end
+	)
+	modem.close(myChan)
+	return reply
 end
 -- Enter credentials prompt
-function enterCreds()
+local function enterCreds()
 	print("Please enter your Username")
 	local u = read()
 	print("Please enter your Password")
@@ -37,7 +47,7 @@ function enterCreds()
 	return u, p
 end
 -- Log in to server
-function login()
+local function login()
 	cls()
 	print("Please enter your login credentials.")
 	print("Please DO NOT enter a password you already use for other things, i.e. email.")
@@ -45,23 +55,18 @@ function login()
 	local body = {}
 	body.username, body.password = enterCreds()
 	local myMsg = {
-		type = "loginUser",
+		uri = "loginUser",
 		id = id,
 		body = body
 	}
 	
-	modem.open(myChan)
-	parallel.waitForAll(
-		function() modem.transmit(sChan, myChan, myMsg) end,
-		function() reply = ListenToServer() end
-	)
-	modem.close(myChan)
+	local reply = sendAndListen(myMsg)
 	
 	if reply then
 		print("You're all logged in!")
 		username = body.username
 		passHash = body.password
-		-- TODO, LMFAO WE NEED TO STORE SOMETHING
+		-- TODO, LMFAO WE NEED TO STORE A VAR OR SOMETHING
 	elseif reply == nil then
 		print("Something went wrong, server did not respond in time.")
 	else
@@ -72,24 +77,18 @@ function login()
 	end
 end
 -- Register user and computer to server
-function register()
+local function register()
 	cls()
 	print("Signup User:")
-	local reply
 	local body = {}
 	body.username, body.password = enterCreds()
 	local myMsg = {
-		type = "registerUser",
+		uri = "registerUser",
 		id = id,
 		body = body
 	}
 	
-	modem.open(myChan)
-	parallel.waitForAll(
-		function() modem.transmit(sChan, myChan, myMsg) end,
-		function() reply = ListenToServer() end
-	)
-	modem.close(myChan)
+	local reply = sendAndListen(myMsg)
 	
 	if reply then
 		login()
@@ -98,19 +97,12 @@ function register()
 	end
 end
 -- check if this computer is registered on the server
-function checkUser()
-	local reply
-	local myMsg = {}
-	myMsg.type = "checkUser"
-	myMsg.id = id
-	
-	modem.open(myChan)
-	parallel.waitForAll(
-		function() modem.transmit(sChan, myChan, myMsg) end,
-		function() reply = ListenToServer() end
-	)
-	modem.close(myChan)
-	
+local function checkUser()
+	local myMsg = {
+		uri = "checkUser",
+		id = id
+	}
+	local reply = sendAndListen(myMsg)
 	if reply then
 		login()
 	elseif reply == nil then
@@ -118,4 +110,8 @@ function checkUser()
 	else
 		register()
 	end
+end
+-- nicer entrypoint
+function loginOrRegister()
+	checkUser()
 end
