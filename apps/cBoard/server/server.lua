@@ -15,16 +15,16 @@ local URIs = {
 }
 -- functions
 function log(message)
-	print(os.time.."- "..message)
+	print(os.time().."- "..message)
 end
 -- main
 -- listen for the message
 local event, modemSide, senderChannel, replyChannel, message, dist = os.pullEvent("modem_message")
 if URIs[message.uri] == nil then return end
 if (message.uri == "checkUser") then
-	if (logging) then log("Replying "..fs.exists("./data/users/").."to the following message:") end
+	if logging then log("Replying "..tostring(fs.exists("apps/cBoard/server/data/users/")).." to the following message:") end
 	-- return true if computer ID is in database
-	modem.transmit(message.id,senderChannel,fs.exists("./data/users/"..message.id))
+	modem.transmit(message.id,senderChannel,fs.exists("apps/cBoard/server/data/users/")..message.id))
 elseif (message.uri == "registerUser") then
 	if logging then log("Registering User ID "..message.id) end
 	local h = fs.open("./data/users/"..message.id,"w")
@@ -34,7 +34,7 @@ elseif (message.uri == "loginUser") then
 	local h = fs.open("./data/users/"..message.id,"r")
 	local s = textutils.unserialize(h.readAll())
 	local res = (message.body.username == s.username and message.body.password == s.password)
-	if logging then log("Replying "..res.."to the following message:") end
+	if logging then log("Replying "..toString(res).."to the following message:") end
 	modem.transmit(message.id,senderChannel,res)
 end
 
